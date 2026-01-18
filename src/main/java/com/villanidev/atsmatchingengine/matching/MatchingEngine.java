@@ -68,14 +68,13 @@ public class MatchingEngine {
         double softSkillScore = computeSoftSkillScore(cvMaster, job);
 
         // Compute average of top 3 experience relevance scores
-        List<Double> experienceRelevanceScores = cvMaster.getExperiences().stream()
+        double avgTopExperiences = cvMaster.getExperiences().stream()
                 .map(exp -> computeExperienceRelevance(exp, job))
                 .sorted(Comparator.reverseOrder())
                 .limit(3)
-                .collect(Collectors.toList());
-
-        double avgTopExperiences = experienceRelevanceScores.isEmpty() ? 0.0 :
-                experienceRelevanceScores.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                .mapToDouble(Double::doubleValue)
+                .average()
+                .orElse(0.0);
 
         // Overall matching score with weights
         double overallScore = 0.45 * globalSkillScore + 
@@ -156,6 +155,10 @@ public class MatchingEngine {
         String normalizedRequired = normalizeSkill(requiredSkill);
         return candidateSkills.stream()
                 .anyMatch(candidate -> normalizeSkill(candidate).equals(normalizedRequired));
+    }
+
+    private boolean skillMatches(String candidateSkill, String requiredSkill) {
+        return normalizeSkill(candidateSkill).equals(normalizeSkill(requiredSkill));
     }
 
     private String normalizeSkill(String skill) {
@@ -383,14 +386,24 @@ public class MatchingEngine {
 
         if (requirements.getMustHaveSkills() != null) {
             requirements.getMustHaveSkills().stream()
-                    .filter(required -> skillMatches(allSkills, required))
-                    .forEach(highlightedSkills::add);
+                    .forEach(required -> {
+                        // Find the actual candidate skill that matches
+                        allSkills.stream()
+                                .filter(candidateSkill -> skillMatches(candidateSkill, required))
+                                .findFirst()
+                                .ifPresent(highlightedSkills::add);
+                    });
         }
 
         if (requirements.getNiceToHaveSkills() != null) {
             requirements.getNiceToHaveSkills().stream()
-                    .filter(required -> skillMatches(allSkills, required))
-                    .forEach(highlightedSkills::add);
+                    .forEach(required -> {
+                        // Find the actual candidate skill that matches
+                        allSkills.stream()
+                                .filter(candidateSkill -> skillMatches(candidateSkill, required))
+                                .findFirst()
+                                .ifPresent(highlightedSkills::add);
+                    });
         }
 
         skillsSection.setHighlightedSkills(new ArrayList<>(highlightedSkills));

@@ -16,7 +16,7 @@ A Spring Boot application that implements a CV and job matching engine. The engi
 
 ## Prerequisites
 
-- Java 21
+- Java 17
 - Maven 3.6+
 
 ## Building the Application
