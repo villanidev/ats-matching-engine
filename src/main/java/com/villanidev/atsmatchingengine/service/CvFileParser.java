@@ -13,6 +13,9 @@ import java.util.List;
 @Service
 public class CvFileParser {
     
+    private static final String DEFAULT_TITLE = "N/A";
+    private static final String DEFAULT_EMAIL = "candidate@example.com";
+    
     private final ObjectMapper objectMapper;
     
     public CvFileParser(ObjectMapper objectMapper) {
@@ -66,8 +69,8 @@ public class CvFileParser {
         cvMaster.setName(name != null ? name : "Unknown Candidate");
         
         // Set placeholder values for required fields
-        cvMaster.setTitle("N/A");
-        cvMaster.setEmail("candidate@example.com");
+        cvMaster.setTitle(DEFAULT_TITLE);
+        cvMaster.setEmail(DEFAULT_EMAIL);
         
         // Summary contains the full text
         List<String> summary = new ArrayList<>();

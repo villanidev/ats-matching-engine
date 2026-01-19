@@ -49,7 +49,7 @@ public class CvController {
     }
 
     @PostMapping(value = "/generate-upload", consumes = "multipart/form-data")
-    public ResponseEntity<?> generateCvFromUpload(
+    public ResponseEntity<Object> generateCvFromUpload(
             @RequestParam("cv_file") MultipartFile cvFile,
             @RequestParam("job_description") String jobDescription,
             @RequestParam(value = "options", required = false) String optionsJson) {
@@ -82,19 +82,6 @@ public class CvController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Error generating CV: " + e.getMessage()));
-        }
-    }
-    
-    // Simple error response class
-    private static class ErrorResponse {
-        private final String error;
-        
-        public ErrorResponse(String error) {
-            this.error = error;
-        }
-        
-        public String getError() {
-            return error;
         }
     }
 }

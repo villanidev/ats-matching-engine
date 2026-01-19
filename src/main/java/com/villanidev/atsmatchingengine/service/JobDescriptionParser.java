@@ -8,6 +8,8 @@ import java.util.UUID;
 @Service
 public class JobDescriptionParser {
     
+    private static final String DEFAULT_JOB_TITLE = "Job Position";
+    
     /**
      * Parses a plain text job description into a Job object.
      * This is a P0 implementation that creates a minimal Job structure.
@@ -48,6 +50,6 @@ public class JobDescriptionParser {
                 return trimmed.length() > 100 ? trimmed.substring(0, 100) : trimmed;
             }
         }
-        return "Job Position";
+        return DEFAULT_JOB_TITLE;
     }
 }
