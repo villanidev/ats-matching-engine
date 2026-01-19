@@ -4,7 +4,9 @@ A Spring Boot application that implements a CV and job matching engine. The engi
 
 ## Features
 
-- REST API endpoint for CV generation based on job requirements
+- **Multiple CV Input Methods**:
+  - JSON-based REST API endpoint for structured CV data (power users)
+  - File upload endpoint supporting text files, JSON, and basic PDF/DOCX support
 - Intelligent matching algorithm that scores candidates based on:
   - Skills coverage (must-have, nice-to-have, and tools)
   - Domain expertise alignment
@@ -37,7 +39,7 @@ The application will start on `http://localhost:8080`.
 
 ### POST /api/cv/generate
 
-Generate a tailored CV based on a master CV and job description.
+Generate a tailored CV based on a master CV and job description (JSON format).
 
 #### Example Request
 
@@ -138,7 +140,51 @@ curl -X POST http://localhost:8080/api/cv/generate \
   }'
 ```
 
-#### Example Response
+### POST /api/cv/generate-upload
+
+Generate a tailored CV by uploading a CV file and providing a plain text job description. This endpoint is ideal for users who don't have their CV in the structured JSON format.
+
+#### Parameters
+
+- `cv_file` (required): Multipart file containing the candidate's CV
+  - **JSON format** (`.json` or `application/json`): Power users can upload a CV already in CvMaster JSON format
+  - **Text formats** (`.txt`, `.md`, or any text): Plain text CV - the system will extract the candidate name from the first line and use the full content as summary
+  - **PDF/DOCX**: Currently treated as text (byte-to-string conversion). Future versions will add proper parsing support.
+  
+- `job_description` (required): Plain text job description pasted by the user
+
+- `options` (optional): JSON string with generation options (same structure as the JSON endpoint)
+  ```json
+  {
+    "language": "en",
+    "max_experiences": 3,
+    "include_only_relevant_experiences": true,
+    "relevance_threshold": 0.5
+  }
+  ```
+
+#### Example Request (Text CV)
+
+```bash
+curl -X POST http://localhost:8080/api/cv/generate-upload \
+  -F "cv_file=@cv.txt" \
+  -F "job_description=Senior Backend Engineer
+We are looking for an experienced backend engineer with strong Java and Spring Boot skills.
+Requirements: 5+ years of experience, knowledge of Redis and PostgreSQL." \
+  -F 'options={"language": "en"}'
+```
+
+#### Example Request (JSON CV)
+
+```bash
+curl -X POST http://localhost:8080/api/cv/generate-upload \
+  -F "cv_file=@cv.json;type=application/json" \
+  -F "job_description=Senior Backend Engineer position requiring Java expertise"
+```
+
+#### Response Format
+
+The response format is identical to the `/api/cv/generate` endpoint:
 
 The response includes:
 - `cv_generated.meta`: Job information and matching scores
@@ -167,11 +213,13 @@ src/
 │   │   ├── AtsMatchingEngineApplication.java   # Main Spring Boot application
 │   │   ├── api/                                # REST API controllers and DTOs
 │   │   ├── domain/                             # Domain models
-│   │   └── matching/                           # Matching engine logic
+│   │   ├── matching/                           # Matching engine logic
+│   │   └── service/                            # Service layer (parsers, utilities)
 │   └── resources/
 │       └── application.properties
 └── test/
     └── java/com/villanidev/atsmatchingengine/
+        ├── api/                                # API integration tests
         └── matching/                           # Unit tests
 ```
 
