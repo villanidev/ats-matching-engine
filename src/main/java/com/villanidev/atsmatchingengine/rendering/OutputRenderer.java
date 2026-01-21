@@ -25,7 +25,7 @@ public class OutputRenderer {
 
         TemplateRegistry registry = new TemplateRegistry();
         String templateName = options != null ? options.getProfile() : null;
-        CvTemplate template = registry.getTemplate(templateName);
+        CvTemplate template = registry.getTemplateForProfile(templateName);
         String markdown = template.renderMarkdown(cvGenerated);
         output.setMarkdown(markdown);
 
