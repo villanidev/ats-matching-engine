@@ -71,9 +71,10 @@ public class CvController {
             throw new com.villanidev.atsmatchingengine.upload.InvalidUploadException("PDF generation failed.");
         }
         byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
+        String filename = buildFilename(cvGenerated, "pdf");
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=generated-cv.pdf")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdfBytes);
     }
@@ -90,9 +91,10 @@ public class CvController {
             throw new com.villanidev.atsmatchingengine.upload.InvalidUploadException("DOCX generation failed.");
         }
         byte[] docxBytes = Base64.getDecoder().decode(docxBase64);
+        String filename = buildFilename(cvGenerated, "docx");
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=generated-cv.docx")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                 .body(docxBytes);
     }
@@ -107,5 +109,21 @@ public class CvController {
         options.setOutputFormats(formats);
 
         return matchingEngine.generateCv(cvMaster, job, options);
+    }
+
+    private String buildFilename(CvGenerated cvGenerated, String extension) {
+        String candidateName = sanitizeFilenamePart(cvGenerated.getHeader().getName());
+        String jobTitle = sanitizeFilenamePart(cvGenerated.getMeta().getJobTitle());
+        return String.format("cv_%s_for_%s.%s", candidateName, jobTitle, extension);
+    }
+
+    private String sanitizeFilenamePart(String value) {
+        if (value == null || value.isBlank()) {
+            return "unknown";
+        }
+        String sanitized = value.trim().toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("^-+|-+$", "");
+        return sanitized.isBlank() ? "unknown" : sanitized;
     }
 }
