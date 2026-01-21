@@ -4,6 +4,8 @@ import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
 import com.villanidev.atsmatchingengine.domain.Options;
+import com.villanidev.atsmatchingengine.matching.scoring.MatchingScoringService;
+import com.villanidev.atsmatchingengine.matching.sections.CvSectionsBuilder;
 import com.villanidev.atsmatchingengine.rendering.OutputRenderer;
 import org.springframework.stereotype.Service;
 

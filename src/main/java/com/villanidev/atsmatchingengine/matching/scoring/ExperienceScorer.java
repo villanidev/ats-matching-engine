@@ -1,4 +1,4 @@
-package com.villanidev.atsmatchingengine.matching;
+package com.villanidev.atsmatchingengine.matching.scoring;
 
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;

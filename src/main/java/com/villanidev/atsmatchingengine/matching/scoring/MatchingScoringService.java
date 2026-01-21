@@ -1,12 +1,12 @@
-package com.villanidev.atsmatchingengine.matching;
+package com.villanidev.atsmatchingengine.matching.scoring;
 
 import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
+import com.villanidev.atsmatchingengine.shared.CandidateSkillCollector;
 
 import java.time.LocalDate;
 import java.util.Comparator;
-import com.villanidev.atsmatchingengine.shared.CandidateSkillCollector;
 
 public class MatchingScoringService {
 

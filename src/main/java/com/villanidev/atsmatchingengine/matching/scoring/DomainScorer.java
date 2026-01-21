@@ -1,10 +1,10 @@
-package com.villanidev.atsmatchingengine.matching;
+package com.villanidev.atsmatchingengine.matching.scoring;
 
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
+import com.villanidev.atsmatchingengine.shared.SkillNormalizer;
 
 import java.util.List;
-import com.villanidev.atsmatchingengine.shared.SkillNormalizer;
 
 public class DomainScorer {
 
