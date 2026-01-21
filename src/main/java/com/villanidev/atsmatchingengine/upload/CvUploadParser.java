@@ -6,7 +6,6 @@ import org.apache.tika.Tika;
 import org.apache.tika.exception.TikaException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +19,7 @@ public class CvUploadParser {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}", Pattern.CASE_INSENSITIVE);
     private static final Pattern PHONE_PATTERN = Pattern.compile("(\\+?\\d[\\d\\s().-]{7,})");
     private static final Pattern SECTION_HEADER_PATTERN = Pattern.compile("^[A-Z][A-Z\\s]{2,}$");
+    private static final Pattern YEARS_EXPERIENCE_PATTERN = Pattern.compile("(\\d{1,2})\\+?\\s+years", Pattern.CASE_INSENSITIVE);
 
     private final Tika tika = new Tika();
 
@@ -54,7 +54,7 @@ public class CvUploadParser {
     private String extractText(MultipartFile file) {
         try (InputStream inputStream = file.getInputStream()) {
             return tika.parseToString(inputStream);
-        } catch (IOException | TikaException | SAXException e) {
+        } catch (IOException | TikaException e) {
             throw new InvalidUploadException("Failed to parse file: " + file.getOriginalFilename());
         }
     }
@@ -69,20 +69,41 @@ public class CvUploadParser {
         cvMaster.setSkills(new ArrayList<>());
         cvMaster.setExperiences(new ArrayList<>());
 
-        String name = lines.isEmpty() ? null : lines.get(0);
+        String name = extractName(lines);
         cvMaster.setName(name != null ? name : "Unknown");
 
-        String title = lines.size() > 1 ? lines.get(1) : "";
-        if (isContactLine(title)) {
-            title = "";
-        }
-        cvMaster.setTitle(title.isBlank() ? "" : title);
+        String title = extractTitle(lines);
+        cvMaster.setTitle(title.isBlank() ? "Candidate" : title);
 
         extractContacts(lines, cvMaster);
         cvMaster.setSummary(extractSummary(lines));
         cvMaster.setSkills(extractSkills(lines));
+        cvMaster.setDomains(extractDomains(lines));
 
         return cvMaster;
+    }
+
+    private String extractName(List<String> lines) {
+        for (String line : lines) {
+            if (!isContactLine(line) && !isSectionHeader(line)) {
+                return line;
+            }
+        }
+        return lines.isEmpty() ? null : lines.get(0);
+    }
+
+    private String extractTitle(List<String> lines) {
+        boolean nameFound = false;
+        for (String line : lines) {
+            if (!nameFound && !isContactLine(line) && !isSectionHeader(line)) {
+                nameFound = true;
+                continue;
+            }
+            if (nameFound && !isContactLine(line) && !isSectionHeader(line)) {
+                return line;
+            }
+        }
+        return "";
     }
 
     private void extractContacts(List<String> lines, CvMaster cvMaster) {
@@ -127,7 +148,7 @@ public class CvUploadParser {
         for (String line : lines) {
             String normalized = line.toLowerCase();
 
-            if (normalized.startsWith("skills") || normalized.startsWith("technical skills")) {
+            if (normalized.startsWith("skills") || normalized.startsWith("technical skills") || normalized.startsWith("technologies")) {
                 inSkillsSection = true;
                 String[] inline = line.split(":", 2);
                 if (inline.length == 2) {
@@ -144,7 +165,41 @@ public class CvUploadParser {
             }
         }
 
-        return skills;
+        if (skills.isEmpty()) {
+            for (String line : lines) {
+                if (line.contains(",") && line.split(",").length >= 3) {
+                    addSkillsFromText(skills, line);
+                }
+            }
+        }
+
+        return deduplicateSkills(skills);
+    }
+
+    private List<String> extractDomains(List<String> lines) {
+        List<String> domains = new ArrayList<>();
+        boolean inDomains = false;
+
+        for (String line : lines) {
+            String normalized = line.toLowerCase();
+            if (normalized.startsWith("domains") || normalized.startsWith("industries") || normalized.startsWith("industry")) {
+                inDomains = true;
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    addTokens(domains, inline[1]);
+                }
+                continue;
+            }
+
+            if (inDomains) {
+                if (isSectionHeader(line)) {
+                    break;
+                }
+                addTokens(domains, line);
+            }
+        }
+
+        return deduplicate(domains);
     }
 
     private void addSkillsFromText(List<CvMaster.Skill> skills, String text) {
@@ -157,6 +212,18 @@ public class CvUploadParser {
                 skills.add(skill);
             }
         }
+    }
+
+    private List<CvMaster.Skill> deduplicateSkills(List<CvMaster.Skill> skills) {
+        Map<String, CvMaster.Skill> unique = new LinkedHashMap<>();
+        for (CvMaster.Skill skill : skills) {
+            if (skill.getName() == null) {
+                continue;
+            }
+            String key = skill.getName().trim().toLowerCase();
+            unique.putIfAbsent(key, skill);
+        }
+        return new ArrayList<>(unique.values());
     }
 
     private boolean isContactLine(String line) {
@@ -188,6 +255,8 @@ public class CvUploadParser {
         requirements.setDomains(new ArrayList<>());
         job.setRequirements(requirements);
 
+        extractJobRequirements(lines, requirements, job);
+
         return job;
     }
 
@@ -199,5 +268,120 @@ public class CvUploadParser {
             }
         }
         return lines.isEmpty() ? "Job" : lines.get(0);
+    }
+
+    private void extractJobRequirements(List<String> lines, Job.Requirements requirements, Job job) {
+        boolean inRequirements = false;
+        boolean inResponsibilities = false;
+        for (String line : lines) {
+            String normalized = line.toLowerCase();
+
+            Matcher yearsMatcher = YEARS_EXPERIENCE_PATTERN.matcher(line);
+            if (yearsMatcher.find()) {
+                requirements.setYearsOfExperience(Integer.parseInt(yearsMatcher.group(1)));
+            }
+
+            if (normalized.startsWith("requirements") || normalized.startsWith("must have") || normalized.startsWith("must-have")) {
+                inRequirements = true;
+                inResponsibilities = false;
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    addTokens(requirements.getMustHaveSkills(), inline[1]);
+                }
+                continue;
+            }
+
+            if (normalized.startsWith("nice to have") || normalized.startsWith("nice-to-have")) {
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    addTokens(requirements.getNiceToHaveSkills(), inline[1]);
+                }
+                continue;
+            }
+
+            if (normalized.startsWith("tools") || normalized.startsWith("stack") || normalized.startsWith("tech stack")) {
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    addTokens(requirements.getTools(), inline[1]);
+                }
+                continue;
+            }
+
+            if (normalized.startsWith("domains") || normalized.startsWith("industries") || normalized.startsWith("industry")) {
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    addTokens(requirements.getDomains(), inline[1]);
+                }
+                continue;
+            }
+
+            if (normalized.startsWith("soft skills")) {
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    job.setSoftSkills(deduplicate(addTokensToNewList(inline[1])));
+                }
+                continue;
+            }
+
+            if (normalized.startsWith("responsibilities") || normalized.startsWith("responsibility")) {
+                inResponsibilities = true;
+                inRequirements = false;
+                String[] inline = line.split(":", 2);
+                if (inline.length == 2) {
+                    job.setResponsibilities(deduplicate(addTokensToNewList(inline[1])));
+                }
+                continue;
+            }
+
+            if (inRequirements) {
+                if (isSectionHeader(line)) {
+                    inRequirements = false;
+                    continue;
+                }
+                addTokens(requirements.getMustHaveSkills(), line);
+            }
+
+            if (inResponsibilities) {
+                if (isSectionHeader(line)) {
+                    inResponsibilities = false;
+                    continue;
+                }
+                if (job.getResponsibilities() == null) {
+                    job.setResponsibilities(new ArrayList<>());
+                }
+                job.getResponsibilities().add(line);
+            }
+        }
+
+        requirements.setMustHaveSkills(deduplicate(requirements.getMustHaveSkills()));
+        requirements.setNiceToHaveSkills(deduplicate(requirements.getNiceToHaveSkills()));
+        requirements.setTools(deduplicate(requirements.getTools()));
+        requirements.setDomains(deduplicate(requirements.getDomains()));
+    }
+
+    private void addTokens(List<String> target, String text) {
+        String[] tokens = text.split("[,;|/]");
+        for (String token : tokens) {
+            String cleaned = token.trim();
+            if (!cleaned.isBlank()) {
+                target.add(cleaned);
+            }
+        }
+    }
+
+    private List<String> addTokensToNewList(String text) {
+        List<String> values = new ArrayList<>();
+        addTokens(values, text);
+        return values;
+    }
+
+    private List<String> deduplicate(List<String> values) {
+        LinkedHashSet<String> unique = new LinkedHashSet<>();
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                unique.add(value.trim());
+            }
+        }
+        return new ArrayList<>(unique);
     }
 }
