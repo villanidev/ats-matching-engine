@@ -43,3 +43,6 @@ buildNumber.properties
 .project
 .settings/
 bin/
+
+#Docs
+provided-docs/
