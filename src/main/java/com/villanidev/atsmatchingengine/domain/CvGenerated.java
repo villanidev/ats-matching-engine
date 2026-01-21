@@ -415,6 +415,12 @@ public class CvGenerated {
         private String markdown;
         private String html;
 
+        @com.fasterxml.jackson.annotation.JsonProperty("pdf_base64")
+        private String pdfBase64;
+
+        @com.fasterxml.jackson.annotation.JsonProperty("docx_base64")
+        private String docxBase64;
+
         public String getMarkdown() {
             return markdown;
         }
@@ -429,6 +435,22 @@ public class CvGenerated {
 
         public void setHtml(String html) {
             this.html = html;
+        }
+
+        public String getPdfBase64() {
+            return pdfBase64;
+        }
+
+        public void setPdfBase64(String pdfBase64) {
+            this.pdfBase64 = pdfBase64;
+        }
+
+        public String getDocxBase64() {
+            return docxBase64;
+        }
+
+        public void setDocxBase64(String docxBase64) {
+            this.docxBase64 = docxBase64;
         }
     }
 }

@@ -55,7 +55,7 @@ public class MatchingEngine {
                 List<CvGenerated.LanguageSection> languagesSection = sectionsBuilder.buildLanguagesSection(cvMaster);
                 cvGenerated.setLanguagesSection(languagesSection);
 
-                CvGenerated.Output output = outputRenderer.buildOutput(cvGenerated);
+                CvGenerated.Output output = outputRenderer.buildOutput(cvGenerated, options);
                 cvGenerated.setOutput(output);
 
                 return cvGenerated;
