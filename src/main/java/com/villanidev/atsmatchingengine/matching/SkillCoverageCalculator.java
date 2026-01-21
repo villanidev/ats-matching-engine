@@ -1,5 +1,7 @@
 package com.villanidev.atsmatchingengine.matching;
 
+import com.villanidev.atsmatchingengine.shared.SkillNormalizer;
+
 import java.util.List;
 import java.util.Set;
 

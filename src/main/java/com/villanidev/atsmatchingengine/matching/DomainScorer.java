@@ -4,6 +4,7 @@ import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
 
 import java.util.List;
+import com.villanidev.atsmatchingengine.shared.SkillNormalizer;
 
 public class DomainScorer {
 

@@ -1,6 +1,6 @@
 package com.villanidev.atsmatchingengine.api;
 
-import com.villanidev.atsmatchingengine.upload.CvUploadParser;
+import com.villanidev.atsmatchingengine.parsing.CvUploadParser;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;

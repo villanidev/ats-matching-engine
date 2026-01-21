@@ -1,6 +1,6 @@
 package com.villanidev.atsmatchingengine.api;
 
-import com.villanidev.atsmatchingengine.upload.InvalidUploadException;
+import com.villanidev.atsmatchingengine.parsing.InvalidUploadException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

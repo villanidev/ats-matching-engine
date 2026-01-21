@@ -1,4 +1,4 @@
-package com.villanidev.atsmatchingengine.upload;
+package com.villanidev.atsmatchingengine.parsing;
 
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
@@ -561,10 +561,10 @@ public class CvUploadParser {
         String cleaned = normalizeLine(sentence);
         String lower = cleaned.toLowerCase();
         String[] prefixes = {
-            "strong experience in", "deep knowledge of", "strong understanding of",
-            "experience in", "experience with", "knowledge of",
-            "familiarity with", "hands-on experience with", "hands on experience with",
-            "work with", "working with", "use of", "using", "exposure to"
+                "strong experience in", "deep knowledge of", "strong understanding of",
+                "experience in", "experience with", "knowledge of",
+                "familiarity with", "hands-on experience with", "hands on experience with",
+                "work with", "working with", "use of", "using", "exposure to"
         };
 
         for (String prefix : prefixes) {
@@ -586,19 +586,9 @@ public class CvUploadParser {
         return addTokensNormalized(cleaned);
     }
 
-    private void addTokens(List<String> target, String text) {
-        String[] tokens = text.split("[,;|/]");
-        for (String token : tokens) {
-            String cleaned = token.trim();
-            if (!cleaned.isBlank()) {
-                target.add(cleaned);
-            }
-        }
-    }
-
     private List<String> addTokensToNewList(String text) {
         List<String> values = new ArrayList<>();
-        addTokens(values, text);
+        values.addAll(addTokensNormalized(text));
         return values;
     }
 

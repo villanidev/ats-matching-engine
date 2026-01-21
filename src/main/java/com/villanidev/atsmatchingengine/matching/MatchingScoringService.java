@@ -6,6 +6,7 @@ import com.villanidev.atsmatchingengine.domain.Job;
 
 import java.time.LocalDate;
 import java.util.Comparator;
+import com.villanidev.atsmatchingengine.shared.CandidateSkillCollector;
 
 public class MatchingScoringService {
 

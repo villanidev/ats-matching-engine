@@ -4,8 +4,8 @@ import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
 import com.villanidev.atsmatchingengine.domain.Options;
-import com.villanidev.atsmatchingengine.matching.MatchingEngine;
-import com.villanidev.atsmatchingengine.upload.CvUploadParser;
+import com.villanidev.atsmatchingengine.cv.CvGenerator;
+import com.villanidev.atsmatchingengine.parsing.CvUploadParser;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -24,17 +24,17 @@ import java.util.List;
 @RequestMapping("/api/cv")
 public class CvController {
 
-    private final MatchingEngine matchingEngine;
+    private final CvGenerator cvGenerator;
     private final CvUploadParser cvUploadParser;
 
-    public CvController(MatchingEngine matchingEngine, CvUploadParser cvUploadParser) {
-        this.matchingEngine = matchingEngine;
+    public CvController(CvGenerator cvGenerator, CvUploadParser cvUploadParser) {
+        this.cvGenerator = cvGenerator;
         this.cvUploadParser = cvUploadParser;
     }
 
     @PostMapping("/generate")
     public ResponseEntity<CvGenerateResponse> generateCv(@Valid @RequestBody CvGenerateRequest request) {
-        CvGenerated cvGenerated = matchingEngine.generateCv(
+        CvGenerated cvGenerated = cvGenerator.generate(
                 request.getCvMaster(),
                 request.getJob(),
                 request.getOptions()
@@ -54,7 +54,7 @@ public class CvController {
         Job job = cvUploadParser.parseJobInput(jobFile, jobText);
         Options options = new Options();
 
-        CvGenerated cvGenerated = matchingEngine.generateCv(cvMaster, job, options);
+        CvGenerated cvGenerated = cvGenerator.generate(cvMaster, job, options);
         CvGenerateResponse response = new CvGenerateResponse(cvGenerated);
         return ResponseEntity.ok(response);
     }
@@ -68,7 +68,7 @@ public class CvController {
         CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("pdf"));
         String pdfBase64 = cvGenerated.getOutput().getPdfBase64();
         if (pdfBase64 == null) {
-            throw new com.villanidev.atsmatchingengine.upload.InvalidUploadException("PDF generation failed.");
+            throw new com.villanidev.atsmatchingengine.parsing.InvalidUploadException("PDF generation failed.");
         }
         byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
         String filename = buildFilename(cvGenerated, "pdf");
@@ -88,7 +88,7 @@ public class CvController {
         CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("docx"));
         String docxBase64 = cvGenerated.getOutput().getDocxBase64();
         if (docxBase64 == null) {
-            throw new com.villanidev.atsmatchingengine.upload.InvalidUploadException("DOCX generation failed.");
+            throw new com.villanidev.atsmatchingengine.parsing.InvalidUploadException("DOCX generation failed.");
         }
         byte[] docxBytes = Base64.getDecoder().decode(docxBase64);
         String filename = buildFilename(cvGenerated, "docx");
@@ -108,7 +108,7 @@ public class CvController {
         Options options = new Options();
         options.setOutputFormats(formats);
 
-        return matchingEngine.generateCv(cvMaster, job, options);
+        return cvGenerator.generate(cvMaster, job, options);
     }
 
     private String buildFilename(CvGenerated cvGenerated, String extension) {

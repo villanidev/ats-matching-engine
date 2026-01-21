@@ -1,4 +1,4 @@
-package com.villanidev.atsmatchingengine.matching;
+package com.villanidev.atsmatchingengine.shared;
 
 import java.util.Set;
 

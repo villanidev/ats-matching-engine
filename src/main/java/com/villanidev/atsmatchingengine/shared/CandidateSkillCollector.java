@@ -1,4 +1,4 @@
-package com.villanidev.atsmatchingengine.matching;
+package com.villanidev.atsmatchingengine.shared;
 
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 

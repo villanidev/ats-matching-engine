@@ -4,6 +4,8 @@ import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
 import com.villanidev.atsmatchingengine.domain.Options;
+import com.villanidev.atsmatchingengine.shared.CandidateSkillCollector;
+import com.villanidev.atsmatchingengine.shared.SkillNormalizer;
 
 import java.util.*;
 
