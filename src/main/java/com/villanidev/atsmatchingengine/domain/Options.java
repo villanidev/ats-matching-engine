@@ -23,6 +23,9 @@ public class Options {
     
     private String profile; // software_engineer_senior
 
+    @com.fasterxml.jackson.annotation.JsonProperty("text_relevance_strategy")
+    private TextRelevanceStrategy textRelevanceStrategy;
+
     // Getters and Setters
     public String getLanguage() {
         return language;
@@ -78,5 +81,13 @@ public class Options {
 
     public void setProfile(String profile) {
         this.profile = profile;
+    }
+
+    public TextRelevanceStrategy getTextRelevanceStrategy() {
+        return textRelevanceStrategy;
+    }
+
+    public void setTextRelevanceStrategy(TextRelevanceStrategy textRelevanceStrategy) {
+        this.textRelevanceStrategy = textRelevanceStrategy;
     }
 }

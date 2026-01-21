@@ -33,7 +33,7 @@ public class MatchingEngine {
         public CvGenerated generateCv(CvMaster cvMaster, Job job, Options options) {
                 CvGenerated cvGenerated = new CvGenerated();
 
-                CvGenerated.Meta meta = scoringService.buildMeta(cvMaster, job);
+                CvGenerated.Meta meta = scoringService.buildMeta(cvMaster, job, options);
                 cvGenerated.setMeta(meta);
 
                 CvGenerated.Header header = sectionsBuilder.buildHeader(cvMaster);

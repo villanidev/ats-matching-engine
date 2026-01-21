@@ -3,6 +3,7 @@ package com.villanidev.atsmatchingengine.matching.scoring;
 import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
 import com.villanidev.atsmatchingengine.domain.Job;
+import com.villanidev.atsmatchingengine.domain.Options;
 import com.villanidev.atsmatchingengine.shared.CandidateSkillCollector;
 
 import java.time.LocalDate;
@@ -16,8 +17,9 @@ public class MatchingScoringService {
     private final ExperienceYearsCalculator experienceYearsCalculator = new ExperienceYearsCalculator();
     private final DomainScorer domainScorer = new DomainScorer();
     private final SoftSkillScorer softSkillScorer = new SoftSkillScorer();
+    private final TextRelevanceScorer textRelevanceScorer = new TextRelevanceScorer();
 
-    public CvGenerated.Meta buildMeta(CvMaster cvMaster, Job job) {
+    public CvGenerated.Meta buildMeta(CvMaster cvMaster, Job job, Options options) {
         CvGenerated.Meta meta = new CvGenerated.Meta();
         meta.setJobId(job.getId());
         meta.setJobTitle(job.getTitle());
@@ -27,6 +29,11 @@ public class MatchingScoringService {
         double domainScore = domainScorer.computeGlobalDomainScore(cvMaster, job);
         double experienceYearsScore = computeExperienceYearsScore(cvMaster, job);
         double softSkillScore = softSkillScorer.computeSoftSkillScore(cvMaster, job);
+        double textRelevanceScore = textRelevanceScorer.computeTextRelevanceScore(
+            cvMaster,
+            job,
+            options != null ? options.getTextRelevanceStrategy() : null
+        );
 
         double avgTopExperiences = cvMaster.getExperiences().stream()
                 .map(exp -> experienceScorer.computeExperienceRelevance(exp, job))
@@ -36,11 +43,12 @@ public class MatchingScoringService {
                 .average()
                 .orElse(0.0);
 
-        double overallScore = 0.45 * globalSkillScore +
-                0.20 * avgTopExperiences +
-                0.10 * domainScore +
-                0.10 * experienceYearsScore +
-                0.15 * softSkillScore;
+        double overallScore = 0.40 * globalSkillScore +
+            0.20 * avgTopExperiences +
+            0.10 * domainScore +
+            0.10 * experienceYearsScore +
+            0.10 * softSkillScore +
+            0.10 * textRelevanceScore;
 
         meta.setMatchingScoreOverall(overallScore);
 
@@ -48,6 +56,7 @@ public class MatchingScoringService {
         matchingDetails.setSkillsCoverage(globalSkillScore);
         matchingDetails.setDomainFit(domainScore);
         matchingDetails.setExperienceRelevance(avgTopExperiences);
+        matchingDetails.setTextRelevance(textRelevanceScore);
         meta.setMatchingDetails(matchingDetails);
 
         return meta;

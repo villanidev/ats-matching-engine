@@ -156,6 +156,9 @@ public class CvGenerated {
         @com.fasterxml.jackson.annotation.JsonProperty("experience_relevance")
         private Double experienceRelevance;
 
+        @com.fasterxml.jackson.annotation.JsonProperty("text_relevance")
+        private Double textRelevance;
+
         public Double getSkillsCoverage() {
             return skillsCoverage;
         }
@@ -178,6 +181,14 @@ public class CvGenerated {
 
         public void setExperienceRelevance(Double experienceRelevance) {
             this.experienceRelevance = experienceRelevance;
+        }
+
+        public Double getTextRelevance() {
+            return textRelevance;
+        }
+
+        public void setTextRelevance(Double textRelevance) {
+            this.textRelevance = textRelevance;
         }
     }
 
