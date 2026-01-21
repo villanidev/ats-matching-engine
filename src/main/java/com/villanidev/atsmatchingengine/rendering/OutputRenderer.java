@@ -50,8 +50,8 @@ public class OutputRenderer {
     }
 
     private String generatePdfBase64(String markdown) {
-        String text = sanitizePdfText(markdownToPlainText(markdown));
-        if (text.isBlank()) {
+        List<StyledLine> lines = parseMarkdownLines(markdown);
+        if (lines.isEmpty()) {
             return null;
         }
         try (PDDocument document = new PDDocument();
@@ -59,19 +59,43 @@ public class OutputRenderer {
             PDPage page = new PDPage();
             document.addPage(page);
 
-            try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
-                contentStream.setFont(PDType1Font.HELVETICA, 11);
-                contentStream.setLeading(14.5f);
-                contentStream.beginText();
-                contentStream.newLineAtOffset(50, 750);
+            float margin = 50f;
+            float y = page.getMediaBox().getHeight() - margin;
 
-                for (String line : wrapLines(text, 95)) {
-                    contentStream.showText(line);
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            contentStream.beginText();
+            contentStream.newLineAtOffset(margin, y);
+
+            for (StyledLine line : lines) {
+                PdfStyle style = PdfStyle.from(line.style);
+                contentStream.setFont(style.font, style.fontSize);
+                contentStream.setLeading(style.leading);
+
+                List<String> wrapped = wrapLines(line.text, style.maxChars);
+                for (String wrappedLine : wrapped) {
+                    if (y <= margin + style.leading) {
+                        contentStream.endText();
+                        contentStream.close();
+                        page = new PDPage();
+                        document.addPage(page);
+                        y = page.getMediaBox().getHeight() - margin;
+                        contentStream = new PDPageContentStream(document, page);
+                        contentStream.beginText();
+                        contentStream.newLineAtOffset(margin, y);
+                    }
+                    contentStream.showText(wrappedLine);
                     contentStream.newLine();
+                    y -= style.leading;
                 }
 
-                contentStream.endText();
+                if (line.style == LineStyle.SECTION_SEPARATOR) {
+                    y -= 6;
+                    contentStream.newLine();
+                }
             }
+
+            contentStream.endText();
+            contentStream.close();
 
             document.save(outputStream);
             return Base64.getEncoder().encodeToString(outputStream.toByteArray());
@@ -81,13 +105,27 @@ public class OutputRenderer {
     }
 
     private String generateDocxBase64(String markdown) {
-        String text = markdownToPlainText(markdown);
+        List<StyledLine> lines = parseMarkdownLines(markdown);
         try (XWPFDocument document = new XWPFDocument();
              ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            for (String line : text.split("\\r?\\n")) {
+            for (StyledLine line : lines) {
+                if (line.style == LineStyle.SECTION_SEPARATOR) {
+                    document.createParagraph();
+                    continue;
+                }
+
                 XWPFParagraph paragraph = document.createParagraph();
                 XWPFRun run = paragraph.createRun();
-                run.setText(line);
+                DocxStyle style = DocxStyle.from(line.style);
+                run.setBold(style.bold);
+                run.setFontSize(style.fontSize);
+
+                if (line.style == LineStyle.BULLET) {
+                    paragraph.setIndentationLeft(360);
+                    run.setText("• " + line.text);
+                } else {
+                    run.setText(line.text);
+                }
             }
             document.write(outputStream);
             return Base64.getEncoder().encodeToString(outputStream.toByteArray());
@@ -96,13 +134,47 @@ public class OutputRenderer {
         }
     }
 
-    private String markdownToPlainText(String markdown) {
-        return markdown
-                .replaceAll("(?m)^#{1,6}\\s*", "")
+    private List<StyledLine> parseMarkdownLines(String markdown) {
+        List<StyledLine> lines = new java.util.ArrayList<>();
+        if (markdown == null || markdown.isBlank()) {
+            return lines;
+        }
+
+        for (String rawLine : markdown.split("\\r?\\n")) {
+            String line = rawLine.trim();
+            if (line.isBlank()) {
+                lines.add(new StyledLine("", LineStyle.SECTION_SEPARATOR));
+                continue;
+            }
+
+            if (line.startsWith("### ")) {
+                lines.add(new StyledLine(cleanMarkdown(line.substring(4)), LineStyle.HEADING_3));
+                continue;
+            }
+            if (line.startsWith("## ")) {
+                lines.add(new StyledLine(cleanMarkdown(line.substring(3)), LineStyle.HEADING_2));
+                continue;
+            }
+            if (line.startsWith("# ")) {
+                lines.add(new StyledLine(cleanMarkdown(line.substring(2)), LineStyle.HEADING_1));
+                continue;
+            }
+            if (line.startsWith("- ")) {
+                lines.add(new StyledLine(cleanMarkdown(line.substring(2)), LineStyle.BULLET));
+                continue;
+            }
+
+            lines.add(new StyledLine(cleanMarkdown(line), LineStyle.BODY));
+        }
+
+        return lines;
+    }
+
+    private String cleanMarkdown(String text) {
+        return text
                 .replaceAll("\\*\\*", "")
                 .replaceAll("\\*", "")
                 .replaceAll("`", "")
-                .replaceAll("\\r", "")
                 .trim();
     }
 
@@ -115,7 +187,11 @@ public class OutputRenderer {
     }
 
     private List<String> wrapLines(String text, int maxLength) {
-        String[] words = text.split("\\s+");
+        String sanitized = sanitizePdfText(text);
+        if (sanitized.isBlank()) {
+            return List.of("");
+        }
+        String[] words = sanitized.split("\\s+");
         StringBuilder line = new StringBuilder();
         java.util.ArrayList<String> lines = new java.util.ArrayList<>();
         for (String word : words) {
@@ -129,5 +205,70 @@ public class OutputRenderer {
             lines.add(line.toString().trim());
         }
         return lines;
+    }
+
+    private enum LineStyle {
+        HEADING_1,
+        HEADING_2,
+        HEADING_3,
+        BODY,
+        BULLET,
+        SECTION_SEPARATOR
+    }
+
+    private static class StyledLine {
+        private final String text;
+        private final LineStyle style;
+
+        private StyledLine(String text, LineStyle style) {
+            this.text = text;
+            this.style = style;
+        }
+    }
+
+    private static class PdfStyle {
+        private final PDType1Font font;
+        private final float fontSize;
+        private final float leading;
+        private final int maxChars;
+
+        private PdfStyle(PDType1Font font, float fontSize, float leading, int maxChars) {
+            this.font = font;
+            this.fontSize = fontSize;
+            this.leading = leading;
+            this.maxChars = maxChars;
+        }
+
+        private static PdfStyle from(LineStyle style) {
+            return switch (style) {
+                case HEADING_1 -> new PdfStyle(PDType1Font.HELVETICA_BOLD, 18f, 22f, 60);
+                case HEADING_2 -> new PdfStyle(PDType1Font.HELVETICA_BOLD, 14f, 18f, 75);
+                case HEADING_3 -> new PdfStyle(PDType1Font.HELVETICA_BOLD, 12f, 16f, 85);
+                case BULLET -> new PdfStyle(PDType1Font.HELVETICA, 11f, 15f, 90);
+                case BODY -> new PdfStyle(PDType1Font.HELVETICA, 11f, 15f, 95);
+                case SECTION_SEPARATOR -> new PdfStyle(PDType1Font.HELVETICA, 11f, 10f, 95);
+            };
+        }
+    }
+
+    private static class DocxStyle {
+        private final boolean bold;
+        private final int fontSize;
+
+        private DocxStyle(boolean bold, int fontSize) {
+            this.bold = bold;
+            this.fontSize = fontSize;
+        }
+
+        private static DocxStyle from(LineStyle style) {
+            return switch (style) {
+                case HEADING_1 -> new DocxStyle(true, 20);
+                case HEADING_2 -> new DocxStyle(true, 16);
+                case HEADING_3 -> new DocxStyle(true, 13);
+                case BULLET -> new DocxStyle(false, 11);
+                case BODY -> new DocxStyle(false, 11);
+                case SECTION_SEPARATOR -> new DocxStyle(false, 11);
+            };
+        }
     }
 }
