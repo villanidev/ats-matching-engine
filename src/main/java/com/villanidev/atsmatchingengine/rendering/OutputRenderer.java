@@ -68,9 +68,6 @@ public class OutputRenderer {
 
             for (StyledLine line : lines) {
                 PdfStyle style = PdfStyle.from(line.style);
-                contentStream.setFont(style.font, style.fontSize);
-                contentStream.setLeading(style.leading);
-
                 List<String> wrapped = wrapLines(line.text, style.maxChars);
                 for (String wrappedLine : wrapped) {
                     if (y <= margin + style.leading) {
@@ -83,6 +80,8 @@ public class OutputRenderer {
                         contentStream.beginText();
                         contentStream.newLineAtOffset(margin, y);
                     }
+                    contentStream.setFont(style.font, style.fontSize);
+                    contentStream.setLeading(style.leading);
                     contentStream.showText(wrappedLine);
                     contentStream.newLine();
                     y -= style.leading;

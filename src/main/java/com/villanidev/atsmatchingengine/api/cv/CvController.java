@@ -49,13 +49,14 @@ public class CvController {
     public ResponseEntity<CvGenerateResponse> generateCvFromUpload(
             @RequestPart("cv_file") MultipartFile cvFile,
             @RequestPart(value = "job_file", required = false) MultipartFile jobFile,
-            @RequestPart(value = "job_text", required = false) String jobText
+            @RequestPart(value = "job_text", required = false) String jobText,
+            @RequestPart(value = "options", required = false) Options options
     ) {
         CvMaster cvMaster = cvUploadParser.parseCvFile(cvFile);
         Job job = cvUploadParser.parseJobInput(jobFile, jobText);
-        Options options = new Options();
+        Options resolvedOptions = options != null ? options : new Options();
 
-        CvGenerated cvGenerated = cvGenerator.generate(cvMaster, job, options);
+        CvGenerated cvGenerated = cvGenerator.generate(cvMaster, job, resolvedOptions);
         CvGenerateResponse response = new CvGenerateResponse(cvGenerated);
         return ResponseEntity.ok(response);
     }
@@ -64,9 +65,10 @@ public class CvController {
     public ResponseEntity<byte[]> generateCvFromUploadPdf(
             @RequestPart("cv_file") MultipartFile cvFile,
             @RequestPart(value = "job_file", required = false) MultipartFile jobFile,
-            @RequestPart(value = "job_text", required = false) String jobText
+            @RequestPart(value = "job_text", required = false) String jobText,
+            @RequestPart(value = "options", required = false) Options options
     ) {
-        CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("pdf"));
+        CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("pdf"), options);
         String pdfBase64 = cvGenerated.getOutput().getPdfBase64();
         if (pdfBase64 == null) {
             throw new InvalidUploadException("PDF generation failed.");
@@ -84,9 +86,10 @@ public class CvController {
     public ResponseEntity<byte[]> generateCvFromUploadDocx(
             @RequestPart("cv_file") MultipartFile cvFile,
             @RequestPart(value = "job_file", required = false) MultipartFile jobFile,
-            @RequestPart(value = "job_text", required = false) String jobText
+            @RequestPart(value = "job_text", required = false) String jobText,
+            @RequestPart(value = "options", required = false) Options options
     ) {
-        CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("docx"));
+        CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("docx"), options);
         String docxBase64 = cvGenerated.getOutput().getDocxBase64();
         if (docxBase64 == null) {
             throw new InvalidUploadException("DOCX generation failed.");
@@ -103,13 +106,14 @@ public class CvController {
     private CvGenerated generateCvForBinary(MultipartFile cvFile,
                                             MultipartFile jobFile,
                                             String jobText,
-                                            List<String> formats) {
+                                            List<String> formats,
+                                            Options options) {
         CvMaster cvMaster = cvUploadParser.parseCvFile(cvFile);
         Job job = cvUploadParser.parseJobInput(jobFile, jobText);
-        Options options = new Options();
-        options.setOutputFormats(formats);
+        Options resolvedOptions = options != null ? options : new Options();
+        resolvedOptions.setOutputFormats(formats);
 
-        return cvGenerator.generate(cvMaster, job, options);
+        return cvGenerator.generate(cvMaster, job, resolvedOptions);
     }
 
     private String buildFilename(CvGenerated cvGenerated, String extension) {
