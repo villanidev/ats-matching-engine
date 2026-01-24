@@ -226,13 +226,38 @@ public class EltPipelineService {
             logger.info("No RAW data to load");
             return;
         }
-        rawItems.forEach(item -> {
+        List<JobPostingRaw> toPersist = rawItems.stream()
+                .filter(this::isNotDuplicate)
+                .toList();
+        if (toPersist.isEmpty()) {
+            logger.info("All RAW items already exist. Skipping load.");
+            return;
+        }
+        toPersist.forEach(item -> {
             if (item.getFetchedAt() == null) {
                 item.setFetchedAt(LocalDateTime.now());
             }
         });
-        rawRepository.saveAll(rawItems);
-        logger.info("Loaded {} RAW items", rawItems.size());
+        rawRepository.saveAll(toPersist);
+        logger.info("Loaded {} RAW items", toPersist.size());
+    }
+
+    private boolean isNotDuplicate(JobPostingRaw item) {
+        if (item == null) {
+            return false;
+        }
+        String source = item.getSource();
+        String externalId = item.getExternalId();
+        String url = item.getUrl();
+        if (source != null && !source.isBlank() && externalId != null && !externalId.isBlank()) {
+            if (rawRepository.existsBySourceAndExternalId(source, externalId)) {
+                return false;
+            }
+        }
+        if (url != null && !url.isBlank()) {
+            return !rawRepository.existsByUrl(url);
+        }
+        return true;
     }
 
     private void normalizeData() {

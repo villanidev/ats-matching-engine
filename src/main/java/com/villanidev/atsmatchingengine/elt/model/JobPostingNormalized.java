@@ -35,6 +35,9 @@ public class JobPostingNormalized {
 
     private String location;
 
+    @Column(name = "search_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private String searchVector;
+
     private LocalDateTime normalizedAt;
 
     public Long getId() {
@@ -107,6 +110,14 @@ public class JobPostingNormalized {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getSearchVector() {
+        return searchVector;
+    }
+
+    public void setSearchVector(String searchVector) {
+        this.searchVector = searchVector;
     }
 
     public LocalDateTime getNormalizedAt() {

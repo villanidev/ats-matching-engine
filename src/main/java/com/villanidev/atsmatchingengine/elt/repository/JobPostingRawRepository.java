@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface JobPostingRawRepository extends JpaRepository<JobPostingRaw, Long> {
 
     List<JobPostingRaw> findByNormalizedFalse();
+
+    boolean existsBySourceAndExternalId(String source, String externalId);
+
+    boolean existsByUrl(String url);
 }
