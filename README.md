@@ -71,3 +71,30 @@ src/main/java/com/villanidev/atsmatchingengine
 ├── shared        # Normalizers + helpers
 └── templates     # CV templates
 ```
+
+## Passo a passo de migração (alto nível)
+
+1. Modelagem e persistência
+
+- Definir entidades para vagas, CV master, CV gerado e resultados de matching.
+- Adicionar banco relacional e repositórios.
+
+2. ELT assíncrono (job diário)
+
+- Criar pipeline ELT assíncrona executada por job agendado (1–2x/dia).
+- Fluxo: extrair → carregar → processar.
+- Manter dado raw e dado normalizado.
+- Normalização para modelo único (título, descrição, requisitos, empresa, localização).
+
+3. Scraping on-demand
+
+- Para casos em “real time”, executar scraping sob demanda usando `@Async` no Spring.
+
+4. Matching e geração
+
+- Expandir scoring com descrição da vaga (BM25/TF‑IDF).
+- Gerar CV otimizado por vaga e persistir histórico.
+
+5. Camada de apresentação
+
+- Expor APIs REST e UI SSR simples.
