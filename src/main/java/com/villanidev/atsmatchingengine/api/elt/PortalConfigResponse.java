@@ -1,54 +1,56 @@
-package com.villanidev.atsmatchingengine.elt.scraping;
+package com.villanidev.atsmatchingengine.api.elt;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.villanidev.atsmatchingengine.elt.scraping.PortalConfig;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "elt_portal_config")
-public class PortalConfig {
+public class PortalConfigResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @JsonProperty("portal_id")
     private String portalId;
 
-    @Column(nullable = false)
-    private boolean enabled = true;
+    private boolean enabled;
 
+    @JsonProperty("base_url")
     private String baseUrl;
+
+    @JsonProperty("listing_url")
     private String listingUrl;
+
+    @JsonProperty("user_agent")
     private String userAgent;
 
-    @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @JsonProperty("rate_limit_ms")
     private Integer rateLimitMs;
 
+    @JsonProperty("max_retries")
     private Integer maxRetries;
 
+    @JsonProperty("created_at")
     private LocalDateTime createdAt;
+
+    @JsonProperty("updated_at")
     private LocalDateTime updatedAt;
-    
-    @PrePersist
-    void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
+
+    public PortalConfigResponse() {
     }
-    
-    @PreUpdate
-    void onUpdate() {
-        updatedAt = LocalDateTime.now();
+
+    public PortalConfigResponse(PortalConfig entity) {
+        this.id = entity.getId();
+        this.portalId = entity.getPortalId();
+        this.enabled = entity.isEnabled();
+        this.baseUrl = entity.getBaseUrl();
+        this.listingUrl = entity.getListingUrl();
+        this.userAgent = entity.getUserAgent();
+        this.notes = entity.getNotes();
+        this.rateLimitMs = entity.getRateLimitMs();
+        this.maxRetries = entity.getMaxRetries();
+        this.createdAt = entity.getCreatedAt();
+        this.updatedAt = entity.getUpdatedAt();
     }
 
     public Long getId() {

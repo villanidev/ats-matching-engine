@@ -1,63 +1,32 @@
-package com.villanidev.atsmatchingengine.elt.scraping;
+package com.villanidev.atsmatchingengine.api.elt;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
 
-@Entity
-@Table(name = "elt_portal_config")
-public class PortalConfig {
+public class PortalConfigRequest {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false, unique = true)
+    @NotBlank
+    @JsonProperty("portal_id")
     private String portalId;
 
-    @Column(nullable = false)
     private boolean enabled = true;
 
+    @JsonProperty("base_url")
     private String baseUrl;
+
+    @JsonProperty("listing_url")
     private String listingUrl;
+
+    @JsonProperty("user_agent")
     private String userAgent;
 
-    @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @JsonProperty("rate_limit_ms")
     private Integer rateLimitMs;
 
+    @JsonProperty("max_retries")
     private Integer maxRetries;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    
-    @PrePersist
-    void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (updatedAt == null) {
-            updatedAt = LocalDateTime.now();
-        }
-    }
-    
-    @PreUpdate
-    void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getPortalId() {
         return portalId;
@@ -121,21 +90,5 @@ public class PortalConfig {
 
     public void setMaxRetries(Integer maxRetries) {
         this.maxRetries = maxRetries;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }

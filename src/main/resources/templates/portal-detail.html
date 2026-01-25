@@ -1,0 +1,116 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Portal</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      pre {
+        white-space: pre-wrap;
+        font-family: inherit;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card" th:if="${success}">
+      <strong>Sucesso:</strong> <span th:text="${success}"></span>
+    </div>
+    <div class="card" th:if="${error}">
+      <strong>Erro:</strong> <span th:text="${error}"></span>
+    </div>
+    <div class="card">
+      <h2 th:text="${portal.portalId}"></h2>
+      <p><strong>Enabled:</strong> <span th:text="${portal.enabled}"></span></p>
+      <p>
+        <strong>Listing URL:</strong>
+        <span th:text="${portal.listingUrl}"></span>
+      </p>
+      <p>
+        <strong>User Agent:</strong> <span th:text="${portal.userAgent}"></span>
+      </p>
+      <p>
+        <strong>Rate Limit (ms):</strong>
+        <span th:text="${portal.rateLimitMs}"></span>
+      </p>
+      <p>
+        <strong>Max Retries:</strong>
+        <span th:text="${portal.maxRetries}"></span>
+      </p>
+      <p><strong>Notes:</strong></p>
+      <pre th:text="${portal.notes}"></pre>
+    </div>
+
+    <div class="card">
+      <h3>Editar</h3>
+      <form method="post" th:action="@{'/portals/' + ${portal.id} + '/update'}">
+        <p>
+          <label>Portal ID</label><br />
+          <input
+            type="text"
+            name="portalId"
+            th:value="${portal.portalId}"
+            required
+          />
+        </p>
+        <p>
+          <label>Enabled</label><br />
+          <input type="text" name="enabled" th:value="${portal.enabled}" />
+        </p>
+        <p>
+          <label>Base URL</label><br />
+          <input type="text" name="baseUrl" th:value="${portal.baseUrl}" />
+        </p>
+        <p>
+          <label>Listing URL</label><br />
+          <input
+            type="text"
+            name="listingUrl"
+            th:value="${portal.listingUrl}"
+          />
+        </p>
+        <p>
+          <label>User Agent</label><br />
+          <input type="text" name="userAgent" th:value="${portal.userAgent}" />
+        </p>
+        <p>
+          <label>Rate Limit (ms)</label><br />
+          <input
+            type="number"
+            name="rateLimitMs"
+            th:value="${portal.rateLimitMs}"
+          />
+        </p>
+        <p>
+          <label>Max Retries</label><br />
+          <input
+            type="number"
+            name="maxRetries"
+            th:value="${portal.maxRetries}"
+          />
+        </p>
+        <p>
+          <label>Notes</label><br />
+          <textarea name="notes" rows="3" th:text="${portal.notes}"></textarea>
+        </p>
+        <button type="submit">Salvar alterações</button>
+      </form>
+    </div>
+
+    <p><a href="/portals">Voltar</a></p>
+  </body>
+</html>

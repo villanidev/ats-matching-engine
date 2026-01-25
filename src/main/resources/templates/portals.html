@@ -1,0 +1,156 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Portais</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      h1 {
+        margin-bottom: 8px;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #fafafa;
+      }
+      input,
+      textarea {
+        padding: 8px;
+        margin-right: 6px;
+        width: 100%;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Portais</h1>
+    <div class="card" th:if="${success}">
+      <strong>Sucesso:</strong> <span th:text="${success}"></span>
+    </div>
+    <div class="card" th:if="${error}">
+      <strong>Erro:</strong> <span th:text="${error}"></span>
+    </div>
+    <div class="card">
+      <form method="post" action="/portals">
+        <div class="grid">
+          <div>
+            <label>Portal ID</label>
+            <input
+              type="text"
+              name="portalId"
+              th:value="${form.portalId}"
+              required
+            />
+          </div>
+          <div>
+            <label>Enabled</label>
+            <input type="text" name="enabled" th:value="${form.enabled}" />
+          </div>
+          <div>
+            <label>Base URL</label>
+            <input type="text" name="baseUrl" th:value="${form.baseUrl}" />
+          </div>
+          <div>
+            <label>Listing URL</label>
+            <input
+              type="text"
+              name="listingUrl"
+              th:value="${form.listingUrl}"
+            />
+          </div>
+          <div>
+            <label>User Agent</label>
+            <input type="text" name="userAgent" th:value="${form.userAgent}" />
+          </div>
+          <div>
+            <label>Rate Limit (ms)</label>
+            <input
+              type="number"
+              name="rateLimitMs"
+              th:value="${form.rateLimitMs}"
+            />
+          </div>
+          <div>
+            <label>Max Retries</label>
+            <input
+              type="number"
+              name="maxRetries"
+              th:value="${form.maxRetries}"
+            />
+          </div>
+          <div>
+            <label>Notes</label>
+            <textarea name="notes" rows="2" th:text="${form.notes}"></textarea>
+          </div>
+        </div>
+        <button type="submit">Salvar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Portal</th>
+            <th>Enabled</th>
+            <th>Listing URL</th>
+            <th>Rate Limit</th>
+            <th>Retries</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="p : ${portals}">
+            <td th:text="${p.id}"></td>
+            <td>
+              <a th:href="@{'/portals/' + ${p.id}}" th:text="${p.portalId}"></a>
+            </td>
+            <td th:text="${p.enabled}"></td>
+            <td th:text="${p.listingUrl}"></td>
+            <td th:text="${p.rateLimitMs}"></td>
+            <td th:text="${p.maxRetries}"></td>
+            <td>
+              <form
+                method="post"
+                th:action="@{'/portals/' + ${p.id} + '/delete'}"
+              >
+                <button type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><a href="/">Voltar ao dashboard</a></p>
+  </body>
+</html>
