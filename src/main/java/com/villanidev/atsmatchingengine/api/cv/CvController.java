@@ -1,19 +1,13 @@
 package com.villanidev.atsmatchingengine.api.cv;
 
 import com.villanidev.atsmatchingengine.cv.CvBatchMatchingService;
-import com.villanidev.atsmatchingengine.cv.CvGenerator;
 import com.villanidev.atsmatchingengine.cv.CvMatchingService;
 import com.villanidev.atsmatchingengine.cv.storage.CvGeneratedStoreService;
 import com.villanidev.atsmatchingengine.cv.storage.CvMasterStoreService;
-import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
-import com.villanidev.atsmatchingengine.domain.Job;
 import com.villanidev.atsmatchingengine.domain.Options;
 import com.villanidev.atsmatchingengine.parsing.CvUploadParser;
-import com.villanidev.atsmatchingengine.parsing.InvalidUploadException;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,38 +20,40 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.Base64;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/cv")
 public class CvController {
 
-    private final CvGenerator cvGenerator;
-    private final CvUploadParser cvUploadParser;
     private final CvMatchingService cvMatchingService;
     private final CvMasterStoreService cvMasterStoreService;
     private final CvBatchMatchingService cvBatchMatchingService;
     private final CvGeneratedStoreService cvGeneratedStoreService;
+    private final CvUploadParser cvUploadParser;
 
     public CvController(
-            CvGenerator cvGenerator,
-            CvUploadParser cvUploadParser,
             CvMatchingService cvMatchingService,
             CvMasterStoreService cvMasterStoreService,
             CvBatchMatchingService cvBatchMatchingService,
-            CvGeneratedStoreService cvGeneratedStoreService) {
-        this.cvGenerator = cvGenerator;
-        this.cvUploadParser = cvUploadParser;
+            CvGeneratedStoreService cvGeneratedStoreService,
+            CvUploadParser cvUploadParser) {
         this.cvMatchingService = cvMatchingService;
         this.cvMasterStoreService = cvMasterStoreService;
         this.cvBatchMatchingService = cvBatchMatchingService;
         this.cvGeneratedStoreService = cvGeneratedStoreService;
+        this.cvUploadParser = cvUploadParser;
     }
 
     @PostMapping("/master")
     public ResponseEntity<CvMasterSaveResponse> saveCvMaster(@Valid @RequestBody CvMaster cvMaster) {
+        return ResponseEntity.ok(new CvMasterSaveResponse(cvMasterStoreService.save(cvMaster)));
+    }
+
+    @PostMapping(value = "/master-upload", consumes = "multipart/form-data")
+    public ResponseEntity<CvMasterSaveResponse> saveCvMasterFromUpload(
+            @RequestPart("cv_file") MultipartFile cvFile) {
+        CvMaster cvMaster = cvUploadParser.parseCvFile(cvFile);
         return ResponseEntity.ok(new CvMasterSaveResponse(cvMasterStoreService.save(cvMaster)));
     }
 
@@ -105,18 +101,6 @@ public class CvController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/generate")
-    public ResponseEntity<CvGenerateResponse> generateCv(@Valid @RequestBody CvGenerateRequest request) {
-        CvGenerated cvGenerated = cvGenerator.generate(
-                request.getCvMaster(),
-                request.getJob(),
-                request.getOptions()
-        );
-
-        CvGenerateResponse response = new CvGenerateResponse(cvGenerated);
-        return ResponseEntity.ok(response);
-    }
-
     @PostMapping("/generate-from-db")
     public ResponseEntity<CvGenerateFromDbResponse> generateCvFromDb(
             @Valid @RequestBody CvGenerateFromDbRequest request) {
@@ -136,92 +120,5 @@ public class CvController {
         CvBatchMatchingService.BatchResult result = cvBatchMatchingService
                 .runBatch(request.getCvMasterId(), resolved, limit);
         return ResponseEntity.ok(new CvBatchMatchResponse(result));
-    }
-
-    @PostMapping(value = "/generate-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<CvGenerateResponse> generateCvFromUpload(
-            @RequestPart("cv_file") MultipartFile cvFile,
-            @RequestPart(value = "job_file", required = false) MultipartFile jobFile,
-            @RequestPart(value = "job_text", required = false) String jobText,
-            @RequestPart(value = "options", required = false) Options options
-    ) {
-        CvMaster cvMaster = cvUploadParser.parseCvFile(cvFile);
-        Job job = cvUploadParser.parseJobInput(jobFile, jobText);
-        Options resolvedOptions = options != null ? options : new Options();
-
-        CvGenerated cvGenerated = cvGenerator.generate(cvMaster, job, resolvedOptions);
-        CvGenerateResponse response = new CvGenerateResponse(cvGenerated);
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping(value = "/generate-upload/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_PDF_VALUE)
-    public ResponseEntity<byte[]> generateCvFromUploadPdf(
-            @RequestPart("cv_file") MultipartFile cvFile,
-            @RequestPart(value = "job_file", required = false) MultipartFile jobFile,
-            @RequestPart(value = "job_text", required = false) String jobText,
-            @RequestPart(value = "options", required = false) Options options
-    ) {
-        CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("pdf"), options);
-        String pdfBase64 = cvGenerated.getOutput().getPdfBase64();
-        if (pdfBase64 == null) {
-            throw new InvalidUploadException("PDF generation failed.");
-        }
-        byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
-        String filename = buildFilename(cvGenerated, "pdf");
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdfBytes);
-    }
-
-    @PostMapping(value = "/generate-upload/docx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    public ResponseEntity<byte[]> generateCvFromUploadDocx(
-            @RequestPart("cv_file") MultipartFile cvFile,
-            @RequestPart(value = "job_file", required = false) MultipartFile jobFile,
-            @RequestPart(value = "job_text", required = false) String jobText,
-            @RequestPart(value = "options", required = false) Options options
-    ) {
-        CvGenerated cvGenerated = generateCvForBinary(cvFile, jobFile, jobText, List.of("docx"), options);
-        String docxBase64 = cvGenerated.getOutput().getDocxBase64();
-        if (docxBase64 == null) {
-            throw new InvalidUploadException("DOCX generation failed.");
-        }
-        byte[] docxBytes = Base64.getDecoder().decode(docxBase64);
-        String filename = buildFilename(cvGenerated, "docx");
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
-                .body(docxBytes);
-    }
-
-    private CvGenerated generateCvForBinary(MultipartFile cvFile,
-                                            MultipartFile jobFile,
-                                            String jobText,
-                                            List<String> formats,
-                                            Options options) {
-        CvMaster cvMaster = cvUploadParser.parseCvFile(cvFile);
-        Job job = cvUploadParser.parseJobInput(jobFile, jobText);
-        Options resolvedOptions = options != null ? options : new Options();
-        resolvedOptions.setOutputFormats(formats);
-
-        return cvGenerator.generate(cvMaster, job, resolvedOptions);
-    }
-
-    private String buildFilename(CvGenerated cvGenerated, String extension) {
-        String candidateName = sanitizeFilenamePart(cvGenerated.getHeader().getName());
-        String jobTitle = sanitizeFilenamePart(cvGenerated.getMeta().getJobTitle());
-        return String.format("cv_%s_for_%s.%s", candidateName, jobTitle, extension);
-    }
-
-    private String sanitizeFilenamePart(String value) {
-        if (value == null || value.isBlank()) {
-            return "unknown";
-        }
-        String sanitized = value.trim().toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
-        return sanitized.isBlank() ? "unknown" : sanitized;
     }
 }
