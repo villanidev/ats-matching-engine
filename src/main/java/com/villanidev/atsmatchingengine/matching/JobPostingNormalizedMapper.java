@@ -1,6 +1,8 @@
 package com.villanidev.atsmatchingengine.matching;
 
 import com.villanidev.atsmatchingengine.domain.Job;
+import com.villanidev.atsmatchingengine.elt.RequirementsExtractionResult;
+import com.villanidev.atsmatchingengine.elt.RequirementsExtractor;
 import com.villanidev.atsmatchingengine.elt.model.JobPostingNormalized;
 import java.util.Arrays;
 import java.util.List;
@@ -9,6 +11,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JobPostingNormalizedMapper {
+
+    private final RequirementsExtractor requirementsExtractor;
+
+    public JobPostingNormalizedMapper(RequirementsExtractor requirementsExtractor) {
+        this.requirementsExtractor = requirementsExtractor;
+    }
 
     public Job toJob(JobPostingNormalized normalized) {
         Job job = new Job();
@@ -22,22 +30,18 @@ public class JobPostingNormalizedMapper {
 
     private Job.Requirements buildRequirements(String requirementsText) {
         Job.Requirements requirements = new Job.Requirements();
-        if (requirementsText == null || requirementsText.isBlank()) {
-            requirements.setMustHaveSkills(List.of());
-            requirements.setNiceToHaveSkills(List.of());
-            requirements.setTools(List.of());
-            requirements.setDomains(List.of());
-            return requirements;
-        }
-        List<String> items = Arrays.stream(requirementsText.split("\\r?\\n|,|;"))
+        String raw = requirementsText != null ? requirementsText : "";
+        List<String> items = Arrays.stream(raw.split("\\r?\\n|,|;"))
                 .map(String::trim)
                 .filter(value -> !value.isBlank())
                 .map(value -> value.replaceAll("^[•\u2022\\-]+\\s*", ""))
                 .collect(Collectors.toList());
-        requirements.setMustHaveSkills(items);
+        RequirementsExtractionResult extracted = requirementsExtractor.extractAll(raw);
+        requirements.setMustHaveSkills(extracted.getSkills().isEmpty() ? items : extracted.getSkills());
         requirements.setNiceToHaveSkills(List.of());
-        requirements.setTools(List.of());
-        requirements.setDomains(List.of());
+        requirements.setTools(extracted.getTools());
+        requirements.setDomains(extracted.getDomains());
+        requirements.setMethodologies(extracted.getMethodologies());
         return requirements;
     }
 }

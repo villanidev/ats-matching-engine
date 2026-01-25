@@ -1,0 +1,73 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CV Masters</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      h1 {
+        margin-bottom: 8px;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #fafafa;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>CV Masters</h1>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Título</th>
+            <th>Email</th>
+            <th>Criado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="master : ${masters}">
+            <td th:text="${master.id}"></td>
+            <td>
+              <a
+                th:href="@{'/cv-masters/' + ${master.id}}"
+                th:text="${master.name}"
+              ></a>
+            </td>
+            <td th:text="${master.title}"></td>
+            <td th:text="${master.email}"></td>
+            <td th:text="${master.createdAt}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p><a href="/">Voltar ao dashboard</a></p>
+  </body>
+</html>

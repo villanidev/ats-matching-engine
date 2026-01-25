@@ -13,6 +13,9 @@ import com.villanidev.atsmatchingengine.elt.scraping.JobPortalScraper;
 import com.villanidev.atsmatchingengine.elt.scraping.JobPortalScraperRegistry;
 import com.villanidev.atsmatchingengine.elt.scraping.PortalConfig;
 import com.villanidev.atsmatchingengine.elt.scraping.PortalConfigRepository;
+import com.villanidev.atsmatchingengine.cv.CvBatchMatchingService;
+import com.villanidev.atsmatchingengine.cv.storage.CvMasterStoreService;
+import com.villanidev.atsmatchingengine.domain.Options;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -21,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -37,6 +41,10 @@ public class EltPipelineService {
     private final PortalConfigRepository portalConfigRepository;
     private final Executor eltExecutor;
     private final EltExecutionService executionService;
+    private final CvBatchMatchingService batchMatchingService;
+    private final CvMasterStoreService cvMasterStoreService;
+    private final boolean autoMatchingEnabled;
+    private final int autoMatchingLimit;
 
     public EltPipelineService(
             JobPostingRawRepository rawRepository,
@@ -45,7 +53,11 @@ public class EltPipelineService {
             JobPortalScraperRegistry scraperRegistry,
             PortalConfigRepository portalConfigRepository,
             @Qualifier("eltTaskExecutor") Executor eltExecutor,
-            EltExecutionService executionService) {
+            EltExecutionService executionService,
+            CvBatchMatchingService batchMatchingService,
+            CvMasterStoreService cvMasterStoreService,
+            @Value("${elt.matching.auto.enabled:true}") boolean autoMatchingEnabled,
+            @Value("${elt.matching.auto.limit:200}") int autoMatchingLimit) {
         this.rawRepository = rawRepository;
         this.normalizedRepository = normalizedRepository;
         this.normalizationService = normalizationService;
@@ -53,6 +65,10 @@ public class EltPipelineService {
         this.portalConfigRepository = portalConfigRepository;
         this.eltExecutor = eltExecutor;
         this.executionService = executionService;
+        this.batchMatchingService = batchMatchingService;
+        this.cvMasterStoreService = cvMasterStoreService;
+        this.autoMatchingEnabled = autoMatchingEnabled;
+        this.autoMatchingLimit = autoMatchingLimit;
     }
 
     public void runScheduled() {
@@ -62,7 +78,10 @@ public class EltPipelineService {
             ScrapeSummary summary = extractAllSources(execution);
             List<JobPostingRaw> extracted = summary.items;
             loadRawData(extracted);
-            normalizeData();
+            executionService.updateCounts(execution, extracted.size(), null, null);
+            int normalizedCount = normalizeData();
+            executionService.updateCounts(execution, null, normalizedCount, null);
+            triggerAutoMatchingIfEnabled(execution);
             executionService.finishExecution(execution, summary.status, null);
             logger.info("ELT scheduled run finished executionId={}", execution.getId());
         } catch (Exception ex) {
@@ -80,7 +99,10 @@ public class EltPipelineService {
             ScrapeSummary summary = extractAllSources(execution);
             List<JobPostingRaw> extracted = summary.items;
             loadRawData(extracted);
-            normalizeData();
+            executionService.updateCounts(execution, extracted.size(), null, null);
+            int normalizedCount = normalizeData();
+            executionService.updateCounts(execution, null, normalizedCount, null);
+            triggerAutoMatchingIfEnabled(execution);
             executionService.finishExecution(execution, summary.status, null);
             logger.info("ELT on-demand run finished for all sources executionId={}", execution.getId());
         } catch (Exception ex) {
@@ -98,7 +120,10 @@ public class EltPipelineService {
             ScrapeSummary summary = extractSource(execution, sourceId);
             List<JobPostingRaw> extracted = summary.items;
             loadRawData(extracted);
-            normalizeData();
+            executionService.updateCounts(execution, extracted.size(), null, null);
+            int normalizedCount = normalizeData();
+            executionService.updateCounts(execution, null, normalizedCount, null);
+            triggerAutoMatchingIfEnabled(execution);
             executionService.finishExecution(execution, summary.status, summary.message);
             logger.info("ELT on-demand run finished for source={} executionId={}", sourceId, execution.getId());
         } catch (Exception ex) {
@@ -260,11 +285,11 @@ public class EltPipelineService {
         return true;
     }
 
-    private void normalizeData() {
+    private int normalizeData() {
         List<JobPostingRaw> rawItems = rawRepository.findByNormalizedFalse();
         if (rawItems.isEmpty()) {
             logger.info("No RAW data pending normalization");
-            return;
+            return 0;
         }
         int normalizedCount = 0;
         for (JobPostingRaw raw : rawItems) {
@@ -278,5 +303,24 @@ public class EltPipelineService {
             }
         }
         logger.info("Normalized {} RAW items", normalizedCount);
+        return normalizedCount;
+    }
+
+    private void triggerAutoMatchingIfEnabled(EltExecution execution) {
+        if (!autoMatchingEnabled) {
+            return;
+        }
+        List<Long> cvMasterIds = cvMasterStoreService.listIds();
+        if (cvMasterIds.isEmpty()) {
+            return;
+        }
+        Options options = new Options();
+        int generatedTotal = 0;
+        for (Long cvMasterId : cvMasterIds) {
+            CvBatchMatchingService.BatchResult result = batchMatchingService.runBatch(
+                    cvMasterId, options, autoMatchingLimit);
+            generatedTotal += result.getGenerated();
+        }
+        executionService.updateCounts(execution, null, null, generatedTotal);
     }
 }

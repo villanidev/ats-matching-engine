@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class RequirementsExtractor {
 
-    private static final List<String> SKILL_DICTIONARY = List.of(
+        private static final List<String> SKILL_DICTIONARY = List.of(
             "java", "spring", "spring boot", "kotlin", "scala",
             "python", "django", "flask", "fastapi",
             "node", "node.js", "javascript", "typescript",
@@ -24,6 +24,21 @@ public class RequirementsExtractor {
             "terraform", "ansible",
             "ci/cd", "git", "linux"
     );
+
+        private static final List<String> TOOL_DICTIONARY = List.of(
+            "docker", "kubernetes", "k8s", "terraform", "ansible",
+            "git", "linux", "jenkins", "github actions", "gitlab ci",
+            "datadog", "new relic", "grafana", "prometheus"
+        );
+
+        private static final List<String> DOMAIN_DICTIONARY = List.of(
+            "fintech", "healthtech", "e-commerce", "ecommerce", "saas",
+            "marketplace", "logistics", "edtech", "adtech"
+        );
+
+        private static final List<String> METHODOLOGY_DICTIONARY = List.of(
+            "agile", "scrum", "kanban", "xp", "tdd", "bdd"
+        );
 
     private static final List<Pattern> PATTERNS = List.of(
             Pattern.compile("\\bjava\\b", Pattern.CASE_INSENSITIVE),
@@ -47,23 +62,45 @@ public class RequirementsExtractor {
             Pattern.compile("\\bgraphql\\b", Pattern.CASE_INSENSITIVE)
     );
 
-    public List<String> extract(String text) {
+    public RequirementsExtractionResult extractAll(String text) {
         if (text == null || text.isBlank()) {
-            return List.of();
+            return new RequirementsExtractionResult(List.of(), List.of(), List.of(), List.of());
         }
         String normalized = text.toLowerCase(Locale.ROOT);
-        Set<String> matches = new LinkedHashSet<>();
 
-        for (String item : SKILL_DICTIONARY) {
-            if (normalized.contains(item)) {
-                matches.add(item);
-            }
-        }
+        Set<String> skills = new LinkedHashSet<>();
+        Set<String> tools = new LinkedHashSet<>();
+        Set<String> domains = new LinkedHashSet<>();
+        Set<String> methodologies = new LinkedHashSet<>();
+
+        matchDictionary(normalized, SKILL_DICTIONARY, skills);
+        matchDictionary(normalized, TOOL_DICTIONARY, tools);
+        matchDictionary(normalized, DOMAIN_DICTIONARY, domains);
+        matchDictionary(normalized, METHODOLOGY_DICTIONARY, methodologies);
+
         for (Pattern pattern : PATTERNS) {
             if (pattern.matcher(text).find()) {
-                matches.add(pattern.pattern().replace("\\b", "").replace("\\s*", " ").trim());
+                skills.add(pattern.pattern().replace("\\b", "").replace("\\s*", " ").trim());
             }
         }
-        return new ArrayList<>(matches);
+
+        return new RequirementsExtractionResult(
+                new ArrayList<>(skills),
+                new ArrayList<>(tools),
+                new ArrayList<>(domains),
+                new ArrayList<>(methodologies)
+        );
+    }
+
+    public List<String> extract(String text) {
+        return extractAll(text).getSkills();
+    }
+
+    private void matchDictionary(String normalized, List<String> dictionary, Set<String> target) {
+        for (String item : dictionary) {
+            if (normalized.contains(item)) {
+                target.add(item);
+            }
+        }
     }
 }

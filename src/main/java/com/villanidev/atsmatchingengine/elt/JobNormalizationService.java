@@ -158,15 +158,17 @@ public class JobNormalizationService {
     private String enrichRequirements(String description, String requirements) {
         String base = requirements != null && !requirements.isBlank() ? requirements : "";
         String text = (description != null ? description : "") + "\n" + base;
-        List<String> extracted = requirementsExtractor.extract(text);
-        if (extracted.isEmpty()) {
+        RequirementsExtractionResult extracted = requirementsExtractor.extractAll(text);
+        if (extracted.getSkills().isEmpty() && extracted.getTools().isEmpty() && extracted.getDomains().isEmpty()) {
             return base.isBlank() ? null : base;
         }
         StringBuilder builder = new StringBuilder();
         if (!base.isBlank()) {
             builder.append(base).append("\n");
         }
-        extracted.forEach(item -> builder.append(item).append("\n"));
+        extracted.getSkills().forEach(item -> builder.append(item).append("\n"));
+        extracted.getTools().forEach(item -> builder.append(item).append("\n"));
+        extracted.getDomains().forEach(item -> builder.append(item).append("\n"));
         return builder.toString().trim();
     }
 }

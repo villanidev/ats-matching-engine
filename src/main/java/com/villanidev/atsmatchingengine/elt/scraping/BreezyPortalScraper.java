@@ -49,28 +49,28 @@ public class BreezyPortalScraper implements JobPortalScraper {
         String userAgent = config.getUserAgent() != null && !config.getUserAgent().isBlank()
                 ? config.getUserAgent()
                 : DEFAULT_USER_AGENT;
-
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(jobsUrl))
-                    .timeout(Duration.ofSeconds(30))
-                    .header("User-Agent", userAgent)
-                    .GET()
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        return scrapeWithRetry(config, () -> {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(jobsUrl))
+                        .timeout(Duration.ofSeconds(30))
+                        .header("User-Agent", userAgent)
+                        .GET()
+                        .build();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                    return parseJobs(response.body(), companySlug);
+                }
                 logger.info("Breezy scraper: non-2xx response status={} url={}", response.statusCode(), jobsUrl);
                 return Collections.emptyList();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                logger.info("Breezy scraper interrupted for companySlug={} message={}", companySlug, ex.getMessage());
+                return Collections.emptyList();
+            } catch (IOException ex) {
+                throw new IllegalStateException(ex);
             }
-            return parseJobs(response.body(), companySlug);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            logger.info("Breezy scraper interrupted for companySlug={} message={}", companySlug, ex.getMessage());
-            return Collections.emptyList();
-        } catch (IOException ex) {
-            logger.info("Breezy scraper failed for companySlug={} message={}", companySlug, ex.getMessage());
-            return Collections.emptyList();
-        }
+        });
     }
 
     private List<JobPostingRaw> parseJobs(String body, String companySlug) throws IOException {
@@ -128,4 +128,5 @@ public class BreezyPortalScraper implements JobPortalScraper {
         }
         return null;
     }
+
 }

@@ -1,7 +1,9 @@
 package com.villanidev.atsmatchingengine.api.cv;
 
+import com.villanidev.atsmatchingengine.cv.CvBatchMatchingService;
 import com.villanidev.atsmatchingengine.cv.CvGenerator;
 import com.villanidev.atsmatchingengine.cv.CvMatchingService;
+import com.villanidev.atsmatchingengine.cv.storage.CvGeneratedStoreService;
 import com.villanidev.atsmatchingengine.cv.storage.CvMasterStoreService;
 import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import com.villanidev.atsmatchingengine.domain.CvMaster;
@@ -21,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Base64;
 import java.util.List;
@@ -33,16 +38,22 @@ public class CvController {
     private final CvUploadParser cvUploadParser;
     private final CvMatchingService cvMatchingService;
     private final CvMasterStoreService cvMasterStoreService;
+    private final CvBatchMatchingService cvBatchMatchingService;
+    private final CvGeneratedStoreService cvGeneratedStoreService;
 
     public CvController(
             CvGenerator cvGenerator,
             CvUploadParser cvUploadParser,
             CvMatchingService cvMatchingService,
-            CvMasterStoreService cvMasterStoreService) {
+            CvMasterStoreService cvMasterStoreService,
+            CvBatchMatchingService cvBatchMatchingService,
+            CvGeneratedStoreService cvGeneratedStoreService) {
         this.cvGenerator = cvGenerator;
         this.cvUploadParser = cvUploadParser;
         this.cvMatchingService = cvMatchingService;
         this.cvMasterStoreService = cvMasterStoreService;
+        this.cvBatchMatchingService = cvBatchMatchingService;
+        this.cvGeneratedStoreService = cvGeneratedStoreService;
     }
 
     @PostMapping("/master")
@@ -50,11 +61,48 @@ public class CvController {
         return ResponseEntity.ok(new CvMasterSaveResponse(cvMasterStoreService.save(cvMaster)));
     }
 
+    @GetMapping("/master")
+    public ResponseEntity<List<CvMasterSummary>> listCvMasters(
+            @RequestParam(value = "limit", defaultValue = "20") int limit) {
+        List<CvMasterSummary> result = cvMasterStoreService.list(limit).stream()
+                .map(CvMasterSummary::new)
+                .toList();
+        return ResponseEntity.ok(result);
+    }
+
     @GetMapping("/master/{id}")
     public ResponseEntity<CvMaster> getCvMaster(@PathVariable("id") Long id) {
         return cvMasterStoreService.loadCvMaster(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/master/{id}")
+    public ResponseEntity<CvMasterSaveResponse> updateCvMaster(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody CvMaster cvMaster) {
+        return cvMasterStoreService.update(id, cvMaster)
+                .map(entity -> ResponseEntity.ok(new CvMasterSaveResponse(entity)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/master/{id}")
+    public ResponseEntity<Void> deleteCvMaster(@PathVariable("id") Long id) {
+        boolean deleted = cvMasterStoreService.delete(id);
+        return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/generated")
+    public ResponseEntity<List<CvGeneratedSummary>> listGenerated(
+            @RequestParam("cv_master_id") Long cvMasterId,
+            @RequestParam(value = "job_posting_id", required = false) Long jobPostingId) {
+        List<CvGeneratedSummary> response = (jobPostingId == null
+                ? cvGeneratedStoreService.listByCvMaster(cvMasterId)
+                : cvGeneratedStoreService.listByCvMasterAndJob(cvMasterId, jobPostingId))
+                .stream()
+                .map(CvGeneratedSummary::new)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/generate")
@@ -79,6 +127,15 @@ public class CvController {
                         request.getOptions() != null ? request.getOptions() : new Options())
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/match/batch")
+    public ResponseEntity<CvBatchMatchResponse> matchBatch(@Valid @RequestBody CvBatchMatchRequest request) {
+        Options resolved = request.getOptions() != null ? request.getOptions() : new Options();
+        int limit = request.getLimit() != null ? request.getLimit() : 200;
+        CvBatchMatchingService.BatchResult result = cvBatchMatchingService
+                .runBatch(request.getCvMasterId(), resolved, limit);
+        return ResponseEntity.ok(new CvBatchMatchResponse(result));
     }
 
     @PostMapping(value = "/generate-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

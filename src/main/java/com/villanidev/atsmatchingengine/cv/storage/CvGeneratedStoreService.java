@@ -3,6 +3,7 @@ package com.villanidev.atsmatchingengine.cv.storage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.villanidev.atsmatchingengine.domain.CvGenerated;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,6 +32,14 @@ public class CvGeneratedStoreService {
         entity.setPayloadJson(toJson(cvGenerated));
         entity.setCreatedAt(LocalDateTime.now());
         return repository.save(entity);
+    }
+
+    public List<CvGeneratedEntity> listByCvMaster(Long cvMasterId) {
+        return repository.findByCvMasterId(cvMasterId);
+    }
+
+    public List<CvGeneratedEntity> listByCvMasterAndJob(Long cvMasterId, Long jobPostingId) {
+        return repository.findByCvMasterIdAndJobPostingId(cvMasterId, jobPostingId);
     }
 
     private String toJson(CvGenerated cvGenerated) {

@@ -1,0 +1,120 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Jobs</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      h1 {
+        margin-bottom: 8px;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #fafafa;
+      }
+      input {
+        padding: 8px;
+        margin-right: 6px;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vagas</h1>
+    <p class="muted">Busca full‑text ou filtros simples.</p>
+
+    <div class="card">
+      <form method="get" action="/jobs">
+        <input
+          type="text"
+          name="q"
+          placeholder="Buscar texto"
+          th:value="${q}"
+        />
+        <input
+          type="text"
+          name="source"
+          placeholder="Fonte"
+          th:value="${source}"
+        />
+        <input
+          type="text"
+          name="location"
+          placeholder="Local"
+          th:value="${location}"
+        />
+        <input
+          type="text"
+          name="company"
+          placeholder="Empresa"
+          th:value="${company}"
+        />
+        <input
+          type="number"
+          name="limit"
+          min="1"
+          max="100"
+          placeholder="Limite"
+        />
+        <button type="submit">Buscar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Empresa</th>
+            <th>Local</th>
+            <th>Fonte</th>
+            <th>Normalizado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="job : ${jobs}">
+            <td th:text="${job.id}"></td>
+            <td>
+              <a th:href="@{'/jobs/' + ${job.id}}" th:text="${job.title}"></a>
+            </td>
+            <td th:text="${job.company}"></td>
+            <td th:text="${job.location}"></td>
+            <td th:text="${job.source}"></td>
+            <td th:text="${job.normalizedAt}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><a href="/">Voltar ao dashboard</a></p>
+  </body>
+</html>

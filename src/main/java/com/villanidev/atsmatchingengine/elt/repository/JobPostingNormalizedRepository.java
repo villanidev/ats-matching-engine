@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface JobPostingNormalizedRepository extends JpaRepository<JobPostingNormalized, Long> {
 
@@ -13,4 +15,10 @@ public interface JobPostingNormalizedRepository extends JpaRepository<JobPosting
 			+ "ORDER BY ts_rank(search_vector, plainto_tsquery('simple', :query)) DESC "
 			+ "LIMIT :limit", nativeQuery = true)
 	List<JobPostingNormalized> searchFullText(@Param("query") String query, @Param("limit") int limit);
+
+	Page<JobPostingNormalized> findBySourceIgnoreCase(String source, Pageable pageable);
+
+	Page<JobPostingNormalized> findByLocationContainingIgnoreCase(String location, Pageable pageable);
+
+	Page<JobPostingNormalized> findByCompanyContainingIgnoreCase(String company, Pageable pageable);
 }

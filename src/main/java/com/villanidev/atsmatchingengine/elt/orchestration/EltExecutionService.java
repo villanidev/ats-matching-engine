@@ -48,4 +48,17 @@ public class EltExecutionService {
         execution.setFinishedAt(LocalDateTime.now());
         executionRepository.save(execution);
     }
+
+    public void updateCounts(EltExecution execution, Integer extracted, Integer normalized, Integer generated) {
+        if (extracted != null) {
+            execution.setExtractedCount(extracted);
+        }
+        if (normalized != null) {
+            execution.setNormalizedCount(normalized);
+        }
+        if (generated != null) {
+            execution.setGeneratedCount(generated);
+        }
+        executionRepository.save(execution);
+    }
 }

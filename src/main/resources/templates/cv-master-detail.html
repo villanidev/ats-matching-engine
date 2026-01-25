@@ -1,0 +1,81 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>CV Master</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #fafafa;
+      }
+      pre {
+        white-space: pre-wrap;
+        font-family: inherit;
+      }
+      a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2 th:text="${master.name}"></h2>
+      <p th:text="${master.title}"></p>
+      <p th:text="${master.email}"></p>
+    </div>
+
+    <div class="card">
+      <h3>JSON</h3>
+      <pre th:text="${#objectMapper.writeValueAsString(cvMaster)}"></pre>
+    </div>
+
+    <div class="card">
+      <h3>CVs Gerados</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Vaga</th>
+            <th>Local</th>
+            <th>Score</th>
+            <th>Criado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="item : ${generated}">
+            <td th:text="${item.id}"></td>
+            <td th:text="${item.jobTitle}"></td>
+            <td th:text="${item.jobLocation}"></td>
+            <td th:text="${item.matchingScore}"></td>
+            <td th:text="${item.createdAt}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><a href="/cv-masters">Voltar</a></p>
+  </body>
+</html>

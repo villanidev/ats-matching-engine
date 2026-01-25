@@ -32,6 +32,12 @@ public class EltExecution {
 
     private LocalDateTime finishedAt;
 
+    private Integer extractedCount;
+
+    private Integer normalizedCount;
+
+    private Integer generatedCount;
+
     @Column(columnDefinition = "TEXT")
     private String message;
 
@@ -81,6 +87,30 @@ public class EltExecution {
 
     public void setFinishedAt(LocalDateTime finishedAt) {
         this.finishedAt = finishedAt;
+    }
+
+    public Integer getExtractedCount() {
+        return extractedCount;
+    }
+
+    public void setExtractedCount(Integer extractedCount) {
+        this.extractedCount = extractedCount;
+    }
+
+    public Integer getNormalizedCount() {
+        return normalizedCount;
+    }
+
+    public void setNormalizedCount(Integer normalizedCount) {
+        this.normalizedCount = normalizedCount;
+    }
+
+    public Integer getGeneratedCount() {
+        return generatedCount;
+    }
+
+    public void setGeneratedCount(Integer generatedCount) {
+        this.generatedCount = generatedCount;
     }
 
     public String getMessage() {

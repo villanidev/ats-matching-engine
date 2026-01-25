@@ -1,0 +1,128 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ATS Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      h1 {
+        margin-bottom: 8px;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #eee;
+        text-align: left;
+        font-size: 14px;
+      }
+      th {
+        background: #fafafa;
+      }
+      .status {
+        font-weight: bold;
+      }
+      .status.RUNNING {
+        color: #d97706;
+      }
+      .status.SUCCESS {
+        color: #16a34a;
+      }
+      .status.PARTIAL {
+        color: #ea580c;
+      }
+      .status.FAILED {
+        color: #dc2626;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Dashboard</h1>
+    <p class="muted">Últimas execuções do ELT e geração de CVs.</p>
+    <p>
+      <a href="/jobs">Vagas</a> ·
+      <a href="/cv-masters">CV Masters</a>
+    </p>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Trigger</th>
+            <th>Escopo</th>
+            <th>Status</th>
+            <th>Início</th>
+            <th>Fim</th>
+            <th>Extraídas</th>
+            <th>Normalizadas</th>
+            <th>CVs Gerados</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="exec : ${executions}">
+            <td th:text="${exec.id}"></td>
+            <td th:text="${exec.triggerType}"></td>
+            <td th:text="${exec.scope}"></td>
+            <td
+              class="status"
+              th:text="${exec.status}"
+              th:classappend="' ' + ${exec.status}"
+            ></td>
+            <td th:text="${exec.startedAt}"></td>
+            <td th:text="${exec.finishedAt}"></td>
+            <td th:text="${exec.extractedCount}"></td>
+            <td th:text="${exec.normalizedCount}"></td>
+            <td th:text="${exec.generatedCount}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" th:each="exec : ${executions}">
+      <h3>Execução <span th:text="${exec.id}"></span></h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Portal</th>
+            <th>Status</th>
+            <th>Início</th>
+            <th>Fim</th>
+            <th>Itens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="item : ${itemsByExecution[exec.id]}">
+            <td th:text="${item.portalId}"></td>
+            <td
+              class="status"
+              th:text="${item.status}"
+              th:classappend="' ' + ${item.status}"
+            ></td>
+            <td th:text="${item.startedAt}"></td>
+            <td th:text="${item.finishedAt}"></td>
+            <td th:text="${item.itemCount}"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

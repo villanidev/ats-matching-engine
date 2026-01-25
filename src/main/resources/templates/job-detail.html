@@ -1,0 +1,54 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vaga</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f8fb;
+      }
+      .card {
+        background: #fff;
+        padding: 16px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        margin-bottom: 16px;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 12px;
+      }
+      h1 {
+        margin-bottom: 4px;
+      }
+      pre {
+        white-space: pre-wrap;
+        font-family: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1 th:text="${job.title}"></h1>
+      <p class="muted">
+        <span th:text="${job.company}"></span> ·
+        <span th:text="${job.location}"></span> ·
+        <span th:text="${job.source}"></span>
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Descrição</h3>
+      <pre th:text="${job.description}"></pre>
+    </div>
+
+    <div class="card">
+      <h3>Requisitos</h3>
+      <pre th:text="${job.requirements}"></pre>
+    </div>
+
+    <p><a href="/jobs">Voltar</a></p>
+  </body>
+</html>

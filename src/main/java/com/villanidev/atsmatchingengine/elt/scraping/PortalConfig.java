@@ -29,6 +29,10 @@ public class PortalConfig {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    private Integer rateLimitMs;
+
+    private Integer maxRetries;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -86,6 +90,22 @@ public class PortalConfig {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Integer getRateLimitMs() {
+        return rateLimitMs;
+    }
+
+    public void setRateLimitMs(Integer rateLimitMs) {
+        this.rateLimitMs = rateLimitMs;
+    }
+
+    public Integer getMaxRetries() {
+        return maxRetries;
+    }
+
+    public void setMaxRetries(Integer maxRetries) {
+        this.maxRetries = maxRetries;
     }
 
     public LocalDateTime getCreatedAt() {

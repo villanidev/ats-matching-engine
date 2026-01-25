@@ -33,6 +33,18 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Thymeleaf (SSR) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+
+        <!-- Basic Auth (Security) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
         <!-- JPA persistence -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

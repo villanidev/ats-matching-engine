@@ -53,28 +53,28 @@ public class AshbyPortalScraper implements JobPortalScraper {
         String userAgent = config.getUserAgent() != null && !config.getUserAgent().isBlank()
                 ? config.getUserAgent()
                 : DEFAULT_USER_AGENT;
-
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiUrl))
-                    .timeout(Duration.ofSeconds(30))
-                    .header("User-Agent", userAgent)
-                    .GET()
-                    .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+        return scrapeWithRetry(config, () -> {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(apiUrl))
+                        .timeout(Duration.ofSeconds(30))
+                        .header("User-Agent", userAgent)
+                        .GET()
+                        .build();
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                    return parseJobs(response.body(), orgSlug);
+                }
                 logger.info("Ashby scraper: non-2xx response status={} url={}", response.statusCode(), apiUrl);
                 return Collections.emptyList();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                logger.info("Ashby scraper interrupted for orgSlug={} message={}", orgSlug, ex.getMessage());
+                return Collections.emptyList();
+            } catch (IOException ex) {
+                throw new IllegalStateException(ex);
             }
-            return parseJobs(response.body(), orgSlug);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            logger.info("Ashby scraper interrupted for orgSlug={} message={}", orgSlug, ex.getMessage());
-            return Collections.emptyList();
-        } catch (IOException ex) {
-            logger.info("Ashby scraper failed for orgSlug={} message={}", orgSlug, ex.getMessage());
-            return Collections.emptyList();
-        }
+        });
     }
 
     private List<JobPostingRaw> parseJobs(String body, String orgSlug) throws IOException {
@@ -137,4 +137,5 @@ public class AshbyPortalScraper implements JobPortalScraper {
         }
         return tail.trim();
     }
+
 }
