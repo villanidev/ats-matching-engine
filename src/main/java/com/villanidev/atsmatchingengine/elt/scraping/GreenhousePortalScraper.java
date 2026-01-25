@@ -108,10 +108,10 @@ public class GreenhousePortalScraper implements JobPortalScraper {
             return null;
         }
         String normalized = listingUrl.trim();
-        String marker = "boards.greenhouse.io/";
+        String marker = "job-boards.greenhouse.io/";
         int idx = normalized.indexOf(marker);
         if (idx < 0) {
-            marker = "greenhouse.io/";
+            marker = "job-boards.greenhouse.io/";
             idx = normalized.indexOf(marker);
         }
         if (idx < 0) {
